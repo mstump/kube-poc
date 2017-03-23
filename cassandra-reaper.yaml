@@ -1,0 +1,82 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: cassandra-reaper
+  name: cassandra-reaper
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 8080
+  selector:
+    app: cassandra-reaper
+---
+apiVersion: apps/v1beta1
+kind: StatefulSet
+metadata:
+  name: cassandra-reaper
+spec:
+  serviceName: cassandra-reaper
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: cassandra-reaper
+    spec:
+      containers:
+
+      - name: cassandra-reaper-postgres
+        image: mstump/cassandra-reaper-postgres:v0.1
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 5432
+          name: postgres
+        resources:
+          limits:
+            cpu: "100m"
+            memory: 1Gi
+          requests:
+           cpu: "100m"
+           memory: 1Gi
+        readinessProbe:
+          tcpSocket:
+            port: 5432
+        securityContext:
+          capabilities:
+            add:
+              - IPC_LOCK
+        volumeMounts:
+        - name: cassandra-reaper-postgres-data
+          mountPath: /var/lib/postgresql
+
+      - name: cassandra-reaper
+        image: mstump/cassandra-reaper:v0.4
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+          name: http
+        - containerPort: 8081
+          name: http-admin
+        resources:
+          limits:
+            cpu: "100m"
+            memory: 3Gi
+          requests:
+           cpu: "100m"
+           memory: 3Gi
+        readinessProbe:
+          httpGet:
+            path: /ping
+            port: 8080
+          initialDelaySeconds: 15
+          timeoutSeconds: 5
+
+  volumeClaimTemplates:
+  - metadata:
+      name: cassandra-reaper-postgres-data
+
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 2Gi
