@@ -24,10 +24,10 @@ jmxPorts:
   127.0.0.8: 7800
 
 logging:
-  level: INFO
+  level: DEBUG
   loggers:
-    io.dropwizard: WARN
-    org.eclipse.jetty: WARN
+    io.dropwizard: DEBUG
+    org.eclipse.jetty: DEBUG
   appenders:
     - type: console
       logFormat: "%-6level [%d] [%t] %logger{5} - %msg %n"
